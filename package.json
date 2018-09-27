@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/uazgraduatecollege/s3publisher.git"
+    "url": "git+ssh://git@gitlab.grad.arizona.edu/web-utils/node-things/s3publisher.git"
   },
   "keywords": [
     "aws",
@@ -21,10 +21,11 @@
   ],
   "author": "Patrick Barabe <pbarabe@email.arizona.edu>",
   "license": "SEE LICENSE IN LICENSE",
+  "private": true,
   "bugs": {
-    "url": "https://github.com/uazgraduatecollege/s3publisher/issues"
+    "url": "https://gitlab.grad.arizona.edu/web-utils/node-things/s3publisher/issues"
   },
-  "homepage": "https://github.com/uazgraduatecollege/s3publisher#readme",
+  "homepage": "https://gitlab.grad.arizona.edu/web-utils/node-things/s3publisher#readme",
   "engines": {
     "node": ">=8.*"
   },
