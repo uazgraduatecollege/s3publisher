@@ -18,14 +18,22 @@ let testDir00 = './test/dir0/dir00' // empty
 
 describe('S3Publisher', () => {
   before((done) => {
-    fs.mkdirSync(testDir1)
-    fs.mkdirSync(testDir00)
+    if (!fs.existsSync(testDir1)) {
+      fs.mkdirSync(testDir1)
+    }
+    if (!fs.existsSync(testDir00)) {
+      fs.mkdirSync(testDir00)
+    }
     done()
   })
 
   after((done) => {
-    fs.rmdirSync(testDir1)
-    fs.rmdirSync(testDir00)
+    if (fs.existsSync(testDir1)) {
+      fs.rmdirSync(testDir1)
+    }
+    if (fs.existsSync(testDir00)) {
+      fs.rmdirSync(testDir00)
+    }
     done()
   })
 
