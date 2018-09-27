@@ -1,0 +1,11 @@
+stages:
+  - test
+
+node8_tests:
+  stage: test
+  image: node:8
+  script:
+    - npm install
+    - npm test
+  tags:
+    - docker
