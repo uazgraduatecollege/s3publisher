@@ -3,7 +3,9 @@
 const AWS = require('aws-sdk')
 const s3 = new AWS.S3()
 const fs = require('fs')
+const fileType = require('file-type')
 const path = require('path')
+const readChunk = require('read-chunk')
 
 const _awsPutFile = Symbol('awsPutFile')
 
@@ -66,32 +68,51 @@ S3Publisher.prototype.publish = function publish (aDir, cb) {
       // determine content type & upload files
       if (nextStats.isFile()) {
         let mimeType = 'application/octet-stream'
-        if (path.extname(thisFilepath) === '.css') {
-          mimeType = 'text/css'
-        }
-        if (path.extname(thisFilepath) === '.csv') {
-          mimeType = 'text/csv'
-        }
-        if (path.extname(thisFilepath) === '.html') {
-          mimeType = 'text/html'
-        }
-        if (path.extname(thisFilepath) === '.js') {
-          mimeType = 'text/javascript'
-        }
-        if (path.extname(thisFilepath) === '.json') {
-          mimeType = 'application/json'
-        }
-        if (path.extname(thisFilepath) === '.md') {
-          mimeType = 'text/markdown'
-        }
-        if (path.extname(thisFilepath) === '.txt') {
-          mimeType = 'text/plain'
-        }
-        if (path.extname(thisFilepath) === '.yaml') {
-          mimeType = 'text/x-yaml'
-        }
-        if (path.extname(thisFilepath) === '.yml') {
-          mimeType = 'text/x-yaml'
+        let fileExt = path.extname(thisFilepath)
+        switch (fileExt) {
+          case '.css':
+            mimeType = 'text/css'
+            break
+
+          case '.csv':
+            mimeType = 'text/csv'
+            break
+
+          case '.html':
+            mimeType = 'text/html'
+            break
+
+          case '.js':
+            mimeType = 'text/javascript'
+            break
+
+          case '.json':
+            mimeType = 'application/json'
+            break
+
+          case '.md':
+            mimeType = 'text/markdown'
+            break
+
+          case '.txt':
+            mimeType = 'text/plain'
+            break
+
+          case '.yaml':
+            mimeType = 'text/x-yaml'
+            break
+
+          case '.yml':
+            mimeType = 'text/x-yaml'
+            break
+
+          default:
+            let ftDetected = fileType(readChunk.sync(thisFilepath, 0, 4100))
+            if (ftDetected !== null) {
+              mimeType = ftDetected.mime
+            } else {
+              mimeType = 'application/octet-stream'
+            }
         }
 
         // assemble the s3 file path
