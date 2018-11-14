@@ -30,7 +30,9 @@
     "node": ">=8.*"
   },
   "dependencies": {
-    "aws-sdk": "^2.323.0"
+    "aws-sdk": "^2.323.0",
+    "file-type": "^10.4.0",
+    "read-chunk": "^3.0.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
