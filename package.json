@@ -1,6 +1,6 @@
 {
-  "name": "s3publisher",
-  "version": "0.1.0",
+  "name": "@uazgraduatecollege/s3publisher",
+  "version": "0.2.0",
   "description": "A utility for deploying static files to AWS S3. Intended primarily for use in CI/CD tasks, eg. publishing a tagged release using gulp.",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://bitbucket.org/uazgraduatecollege/s3publisher.git"
+    "url": "git@github.com:uazgraduatecollege/s3publisher.git"
   },
   "keywords": [
     "aws",
@@ -19,15 +19,21 @@
     "integration",
     "dev-ops"
   ],
-  "author": "Patrick Barabe <pbarabe@email.arizona.edu>",
+  "author": "UA Graduate College IT <help@grad.arizona.edu>",
+  "contributors": [
+    "Patrick Barabe <pbarabe@arizona.edu>"
+  ],
+  "maintainers": [
+    "UA Graduate College IT <help@grad.arizona.edu>"
+  ],
   "license": "SEE LICENSE IN LICENSE",
-  "private": true,
   "bugs": {
-    "url": "https://bitbucket.org/uazgraduatecollege/s3publisher/issues"
+    "url": "https://github.com/uazgraduatecollege/s3publisher/issues"
   },
-  "homepage": "https://bitbucket.org/uazgraduatecollege/s3publisher#readme",
+  "homepage": "https://github.com/uazgraduatecollege/s3publisher#readme",
   "engines": {
-    "node": ">=8.*"
+    "node": ">= 10.16.0",
+    "npm": ">= 6.12.0"
   },
   "dependencies": {
     "aws-sdk": "^2.323.0",
