@@ -1,8 +1,0 @@
-pipelines:
-  default:
-    - step:
-        name: Node 8 test
-        image: node:8
-        script:
-          - npm install
-          - npm test
