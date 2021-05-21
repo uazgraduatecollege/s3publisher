@@ -1,0 +1,10 @@
+---
+# Just a YAML file
+data:
+  created: "Sometime before now"
+  notes:
+    - "Colorless green ideas sleep furiously"
+  fields:
+    - column_0
+    - column_1
+    - column_1

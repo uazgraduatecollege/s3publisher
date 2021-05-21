@@ -9,11 +9,12 @@ const S3Publisher = require('../index')
 
 let testPublisher = new S3Publisher({
   keyPrefix: 'testS3Publisher',
-  bucket: process.env.AWS_S3_BUCKET
+  bucket: process.env.AWS_S3_BUCKET,
+  exclusions: ['.map']
 })
-let testDir0 = './test/dir0'
-let testDir1 = './test/dir1' // empty
-let testDir2 = './test/dir2' // doesn't exist
+let testDir0 = './test/foo' // test dir
+let testDir1 = './test/empty' // empty
+let testDir2 = './test/nil' // doesn't exist
 
 describe('S3Publisher', () => {
   before((done) => {
@@ -56,6 +57,7 @@ describe('S3Publisher', () => {
 
     it('Uploads all files in a directory', (done) => {
       testPublisher.publish(testDir0, (err, data) => {
+        console.log(data)
         expect(data).to.be.an('object')
         expect(data).to.have.propery('ETag')
         expect(data).to.have.propery('s3file')

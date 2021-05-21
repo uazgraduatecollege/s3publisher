@@ -1,0 +1,5 @@
+'use strict'
+
+console.log('Hey, this is just a javascript file.')
+console.log('It has a .map file extension becaus it\'s pretending to be a webpack source-map file that should be omitted.')
+console.log('Move along, move along.')
