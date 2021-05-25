@@ -6,15 +6,28 @@ const fs = require('fs')
 const fileType = require('file-type')
 const path = require('path')
 const readChunk = require('read-chunk')
-
 const _awsPutFile = Symbol('awsPutFile')
 
 class S3Publisher {
+  /**
+   * constructor
+   *
+   * @params - Parameters object
+   * @params.bucket string The name of the S3 bucket where files will be synced
+   * @params.exclusions array A list of file extensions to be excluded when uploading
+   * @params.keyPrefix string A directory path to be created in the remote bucket
+   * @params.preserveSourceTree boolean Whether
+   */
   constructor (params) {
+    // params must be passed
     if (typeof params === 'undefined') {
       throw new Error('S3Publisher must be instantiated with a params object')
+
+    // params must included at least the 'bucket' parameter
     } else if (typeof params.bucket === 'undefined') {
       throw new Error('S3Publisher must be instantiated with a bucket parameter')
+
+    // good-to-go
     } else {
       this.params = {}
       this.params.bucket = params.bucket
