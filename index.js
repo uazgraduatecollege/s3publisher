@@ -23,9 +23,13 @@ class S3Publisher {
     if (typeof params === 'undefined') {
       throw new Error('S3Publisher must be instantiated with a params object')
 
-    // params must included at least the 'bucket' parameter
+    // params must include at least the 'bucket' parameter
     } else if (typeof params.bucket === 'undefined') {
-      throw new Error('S3Publisher must be instantiated with a bucket parameter')
+      throw new Error('S3Publisher must be instantiated with the bucket parameter')
+
+    // the 'bucket' param must be a non-empty string
+    } else if (typeof params.bucket === 'string' && params.bucket.length === 0) {
+      throw new Error('S3Publisher must be instantiated with a valid bucket name')
 
     // good-to-go
     } else {
