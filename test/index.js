@@ -2,9 +2,9 @@
 'use strict'
 
 const AWS = require('aws-sdk')
+const s3 = new AWS.S3()
 const expect = require('chai').expect
 const fs = require('fs')
-const s3 = new AWS.S3()
 const S3Publisher = require('../index')
 
 let testPublisher = new S3Publisher({
@@ -16,18 +16,55 @@ let testDir0 = './test/foo' // test dir
 let testDir1 = './test/empty' // empty
 let testDir2 = './test/nil' // doesn't exist
 
+// make sure the remote path is clear
+const cleanRemote = () => {
+  s3.listObjectsV2(
+    {
+      Bucket: process.env.AWS_S3_BUCKET,
+      Prefix: 'testS3Publisher'
+    }, (err, data) => {
+      if (err) {
+        console.error(err)
+      }
+
+      if (data.Contents.length > 0) {
+        s3.deleteObjects({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Delete: {
+            Objects: data.Contents.map(({ Key }) => ({ Key }))
+          }
+        }, (delErr, delData) => {
+          if (delErr) {
+            console.error(delErr)
+          }
+        })
+      }
+    }
+  )
+}
+
 describe('S3Publisher', () => {
   before((done) => {
+    // start with a clean remote path
+    cleanRemote()
+
+    // create an empty dir to test
     if (!fs.existsSync(testDir1)) {
       fs.mkdirSync(testDir1)
     }
+
     done()
   })
 
   after((done) => {
+    // cleanup remote path
+    cleanRemote()
+
+    // remove the empty dir
     if (fs.existsSync(testDir1)) {
       fs.rmdirSync(testDir1)
     }
+
     done()
   })
 
@@ -46,7 +83,7 @@ describe('S3Publisher', () => {
     done()
   })
 
-  describe('publish', () => {
+  describe('S3Publisher.publish()', () => {
     it('Returns an error if the source directory does not exist', (done) => {
       testPublisher.publish(testDir2, (err, data) => {
         expect(err).to.be.an('Error')
@@ -62,6 +99,25 @@ describe('S3Publisher', () => {
       done()
     })
 
+    it('Uploads all files in a directory tree', async () => {
+      testPublisher.publish(testDir0, (err, data) => {
+        expect(data).to.be.an('object')
+        expect(data).to.have.property('ETag')
+        expect(data).to.have.property('s3file')
+      })
+
+      const objectList = await s3.listObjectsV2(
+        {
+          Bucket: process.env.AWS_S3_BUCKET,
+          Prefix: 'testS3Publisher'
+        }
+      ).promise()
+      expect(objectList).to.have.property('Contents')
+      expect(objectList).to.have.property('KeyCount')
+      expect(objectList.KeyCount).to.equal(objectList.Contents.length)
+      expect(objectList.KeyCount).to.be.gt(0)
+    }).timeout(10000)
+
     it('Does not upload files that match defined exclusions', (done) => {
       s3.getObject(
         {
@@ -69,112 +125,36 @@ describe('S3Publisher', () => {
           Key: '/testS3Publisher/script.js.map'
         }, (err, data) => {
           expect(err).to.have.property('statusCode')
-          expect(err.statusCode).to.be(404)
+          expect(err.statusCode).to.equal(404)
       })
+
       done()
-    })
+    }).timeout(10000)
 
-    it('Uploads all files in a directory tree', (done) => {
-      testPublisher.publish(testDir0, (err, data) => {
-        expect(data).to.be.an('object')
-        expect(data).to.have.propery('ETag')
-        expect(data).to.have.propery('s3file')
-      })
-
-      const files = [
-        '/testS3Publisher/JSON.json',
-        '/testS3Publisher/YAML.yaml',
-        '/testS3Publisher/YAML.yml',
-        '/testS3Publisher/comma.csv',
-        '/testS3Publisher/generic',
-        '/testS3Publisher/markdown.md',
-        '/testS3Publisher/script.js',
-        '/testS3Publisher/style.css',
-        '/testS3Publisher/text.txt',
-        '/testS3Publisher/bar/JSON.json',
-        '/testS3Publisher/bar/YAML.yaml',
-        '/testS3Publisher/bar/YAML.yml',
-        '/testS3Publisher/bar/comma.csv',
-        '/testS3Publisher/bar/generic',
-        '/testS3Publisher/bar/markdown.md',
-        '/testS3Publisher/bar/script.js',
-        '/testS3Publisher/bar/style.css',
-        '/testS3Publisher/bar/text.txt',
-      ]
-
-      const excluded = [
-        '/testS3Publisher/script.js.map',
-        '/testS3Publisher/bar/script.js.map'
-      ]
-
-      s3.listObjectsV2(
-        {
-          Bucket: process.env.AWS_S3_BUCKET,
-          Prefix: 'testS3Publisher'
-        }, (err, data) => {
-        expect(data).to.have.property('Contents')
-
-        for (let i = 0; i < files.length; i++) {
-          let nextRemote = data.Contents[i]
-          expect(i).to.have.property('Key')
-          let inFileList = files.includes(i.Key)
-          expect(inFileList).to.be.true
-        }
-      })
-      done()
-    })
-
-    it('Preserves the complete source tree if specified', (done) => {
+    it('Preserves the complete source tree when preserveSourceDir is specified', async () => {
       let fullSourcePublisher = new S3Publisher({
         keyPrefix: 'testS3Publisher',
         bucket: process.env.AWS_S3_BUCKET,
         preserveSourceDir: true
       })
-      const files = [
-        '/testS3Publisher/test/foo/JSON.json',
-        '/testS3Publisher/test/foo/YAML.yaml',
-        '/testS3Publisher/test/foo/YAML.yml',
-        '/testS3Publisher/test/foo/comma.csv',
-        '/testS3Publisher/test/foo/generic',
-        '/testS3Publisher/test/foo/markdown.md',
-        '/testS3Publisher/test/foo/script.js',
-        '/testS3Publisher/test/foo/script.js.map',
-        '/testS3Publisher/test/foo/style.css',
-        '/testS3Publisher/test/foo/text.txt',
-        '/testS3Publisher/test/foo/bar/JSON.json',
-        '/testS3Publisher/test/foo/bar/YAML.yaml',
-        '/testS3Publisher/test/foo/bar/YAML.yml',
-        '/testS3Publisher/test/foo/bar/comma.csv',
-        '/testS3Publisher/test/foo/bar/generic',
-        '/testS3Publisher/test/foo/bar/markdown.md',
-        '/testS3Publisher/test/foo/bar/script.js',
-        '/testS3Publisher/test/foo/bar/script.js.map',
-        '/testS3Publisher/test/foo/bar/style.css',
-        '/testS3Publisher/test/foo/bar/text.txt',
-      ]
 
       fullSourcePublisher.publish(testDir0, (err, data) => {
         expect(data).to.be.an('object')
-        expect(data).to.have.propery('ETag')
-        expect(data).to.have.propery('s3file')
+        expect(data).to.have.property('ETag')
+        expect(data).to.have.property('s3file')
       })
 
-      s3.listObjectsV2(
+      const objectList = await s3.listObjectsV2(
         {
           Bucket: process.env.AWS_S3_BUCKET,
-          Prefix: 'testS3Publisher'
-        }, (err, data) => {
-
-        expect(data).to.have.property('Contents')
-
-        for (let i = 0; i < files.length; i++) {
-          let nextRemote = data.Contents[i]
-          expect(i).to.have.property('Key')
-          let inFileList = files.includes(i.Key)
-          expect(inFileList).to.be.true
+          Prefix: 'testS3Publisher/test'
         }
-      })
-      done()
-    })
+      ).promise()
+
+      expect(objectList).to.have.property('Contents')
+      expect(objectList).to.have.property('KeyCount')
+      expect(objectList.KeyCount).to.equal(objectList.Contents.length)
+      expect(objectList.KeyCount).to.be.gt(0)
+    }).timeout(10000)
   })
 })
