@@ -6,20 +6,38 @@ const fs = require('fs')
 const fileType = require('file-type')
 const path = require('path')
 const readChunk = require('read-chunk')
-
 const _awsPutFile = Symbol('awsPutFile')
 
 class S3Publisher {
+  /**
+   * constructor
+   *
+   * @params - Parameters object
+   * @params.bucket string The name of the S3 bucket where files will be synced
+   * @params.exclusions array A list of file extensions to be excluded when uploading
+   * @params.keyPrefix string A directory path to be created in the remote bucket
+   * @params.preserveSourceTree boolean Whether
+   */
   constructor (params) {
+    // params must be passed
     if (typeof params === 'undefined') {
       throw new Error('S3Publisher must be instantiated with a params object')
+
+    // params must include at least the 'bucket' parameter
     } else if (typeof params.bucket === 'undefined') {
-      throw new Error('S3Publisher must be instantiated with a bucket parameter')
+      throw new Error('S3Publisher must be instantiated with the bucket parameter')
+
+    // the 'bucket' param must be a non-empty string
+    } else if (typeof params.bucket === 'string' && params.bucket.length === 0) {
+      throw new Error('S3Publisher must be instantiated with a valid bucket name')
+
+    // good-to-go
     } else {
       this.params = {}
-      this.params.preserveSourceDir = params.preserveSourceDir || false
-      this.params.keyPrefix = params.keyPrefix || ''
       this.params.bucket = params.bucket
+      this.params.exclusions = params.exclusions || []
+      this.params.keyPrefix = params.keyPrefix || ''
+      this.params.preserveSourceDir = params.preserveSourceDir || false
     }
   }
 
@@ -35,7 +53,7 @@ class S3Publisher {
       if (err) {
         return cb(err)
       } else {
-        let s3file = 's3://' + putParams.Bucket + '/' + putParams.Key
+        let s3file = `s3://${putParams.Bucket}/${putParams.Key}`
         data.s3file = s3file
         cb(null, data)
       }
@@ -43,20 +61,42 @@ class S3Publisher {
   }
 }
 
-S3Publisher.prototype.publish = function publish (aDir, cb) {
+S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
+  // keeps track of recursion
+  let recursionCycle = 0
+
+  // remove trailing slash (/) from aDir
+  aDir = aDir.replace(/\/+$/, '')
+
+  // preserve the original path as an object parameter
+  if (typeof this.origDir === 'undefined') {
+    this.origDir = aDir
+  }
+
+  // update the recursion cycle
+  if (typeof cycle === 'number') {
+    recursionCycle = cycle
+  }
+
+  // preserve backwards compatibility for
+  // apps that already use s3publisher
+  if (typeof cycle === 'function') {
+    cb = cycle
+  }
+
+  // process dir contents
   fs.readdir(aDir, (err, files) => {
     if (err) {
       return cb(err)
     }
 
-    for (let i in files) {
-      let nextFile = files[i]
+    for (const nextFile of files) {
       let thisFilepath = path.join(aDir, nextFile)
       let nextStats = fs.statSync(thisFilepath)
 
       // recursively upload files in child directories
       if (nextStats.isDirectory()) {
-        this.publish(thisFilepath, (err, data) => {
+        this.publish(thisFilepath, recursionCycle + 1, (err, data) => {
           if (err) {
             return cb(err)
           } else {
@@ -69,6 +109,7 @@ S3Publisher.prototype.publish = function publish (aDir, cb) {
       if (nextStats.isFile()) {
         let mimeType = 'application/octet-stream'
         let fileExt = path.extname(thisFilepath)
+
         switch (fileExt) {
           case '.css':
             mimeType = 'text/css'
@@ -94,6 +135,10 @@ S3Publisher.prototype.publish = function publish (aDir, cb) {
             mimeType = 'text/markdown'
             break
 
+          case '.map':
+            mimeType = 'text/javascript'
+            break
+
           case '.txt':
             mimeType = 'text/plain'
             break
@@ -115,27 +160,53 @@ S3Publisher.prototype.publish = function publish (aDir, cb) {
             }
         }
 
-        // assemble the s3 file path
-        let remoteFilepath = path.join(this.params.keyPrefix, nextFile)
-        if (this.params.preserveSourceDir) {
-          remoteFilepath = path.join(this.params.keyPrefix, aDir, nextFile)
-        }
+        // proceed with upload if file extension is not excluded
+        if (this.params.exclusions.indexOf(fileExt) === -1) {
+          // assemble the s3 file path
+          let remoteFilepath
 
-        // assemble the putObject parameters
-        let putParams = {
-          bucket: this.params.bucket,
-          remoteFilepath: remoteFilepath,
-          localFilepath: thisFilepath,
-          mimeType: mimeType
-        }
+          // preserve source dir tree
+          if (this.params.preserveSourceDir) {
+            remoteFilepath = path.join(this.params.keyPrefix, aDir, nextFile)
 
-        this[_awsPutFile](putParams, (err, data) => {
-          if (err) {
-            return cb(err)
+          // handle subdirectory paths
+          } else if (cycle > 0) {
+            let origPathElems = this.origDir.split(path.sep)
+            let dirPathElems = aDir.split(path.sep)
+            let outPathElems = []
+
+            for (let i = 0; i < dirPathElems.length; i++) {
+              const nextPathElem = dirPathElems[i]
+
+              if (origPathElems.indexOf(nextPathElem) === -1) {
+                outPathElems.push(nextPathElem)
+              }
+            }
+
+            let outPath = outPathElems.join(path.sep)
+            remoteFilepath = path.join(this.params.keyPrefix, outPath, nextFile)
+
+          // handle root dir files
           } else {
-            cb(null, data)
+            remoteFilepath = path.join(this.params.keyPrefix, nextFile)
           }
-        })
+
+          // assemble the putObject parameters
+          let putParams = {
+            bucket: this.params.bucket,
+            remoteFilepath: remoteFilepath,
+            localFilepath: thisFilepath,
+            mimeType: mimeType
+          }
+
+          this[_awsPutFile](putParams, (err, data) => {
+            if (err) {
+              return cb(err)
+            } else {
+              cb(null, data)
+            }
+          })
+        }
       }
     }
   })
