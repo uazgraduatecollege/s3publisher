@@ -43,7 +43,7 @@ class S3Publisher {
   }
 
   [_awsPutFile] (params, cb) {
-    let putParams = {
+    const putParams = {
       Bucket: params.bucket,
       Key: params.remoteFilepath,
       Body: readFileSync(params.localFilepath),
@@ -54,7 +54,7 @@ class S3Publisher {
       if (err) {
         return cb(err)
       } else {
-        let s3file = `s3://${putParams.Bucket}/${putParams.Key}`
+        const s3file = `s3://${putParams.Bucket}/${putParams.Key}`
         data.s3file = s3file
         cb(null, data)
       }
@@ -92,8 +92,8 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
     }
 
     for (const nextFile of files) {
-      let thisFilepath = path.join(aDir, nextFile)
-      let nextStats = statSync(thisFilepath)
+      const thisFilepath = path.join(aDir, nextFile)
+      const nextStats = statSync(thisFilepath)
 
       // recursively upload files in child directories
       if (nextStats.isDirectory()) {
@@ -109,7 +109,7 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
       // determine content type & upload files
       if (nextStats.isFile()) {
         let mimeType = 'application/octet-stream'
-        let fileExt = path.extname(thisFilepath)
+        const fileExt = path.extname(thisFilepath)
         let ftDetected = null
 
         switch (fileExt) {
@@ -173,9 +173,9 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
 
             // handle subdirectory paths
           } else if (cycle > 0) {
-            let origPathElems = this.origDir.split(path.sep)
-            let dirPathElems = aDir.split(path.sep)
-            let outPathElems = []
+            const origPathElems = this.origDir.split(path.sep)
+            const dirPathElems = aDir.split(path.sep)
+            const outPathElems = []
 
             for (let i = 0; i < dirPathElems.length; i++) {
               const nextPathElem = dirPathElems[i]
@@ -185,7 +185,7 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
               }
             }
 
-            let outPath = outPathElems.join(path.sep)
+            const outPath = outPathElems.join(path.sep)
             remoteFilepath = path.join(this.params.keyPrefix, outPath, nextFile)
 
             // handle root dir files
@@ -194,7 +194,7 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
           }
 
           // assemble the putObject parameters
-          let putParams = {
+          const putParams = {
             bucket: this.params.bucket,
             remoteFilepath: remoteFilepath,
             localFilepath: thisFilepath,
