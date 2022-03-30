@@ -37,7 +37,7 @@
     "npm": ">= 6.12.0"
   },
   "dependencies": {
-    "aws-sdk": "^2.1103.0",
+    "aws-sdk": "^2.1104.0",
     "file-type": "^17.1.1",
     "read-chunk": "^4.0.2"
   },
@@ -48,7 +48,7 @@
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.2.0",
-    "mocha": "^8.4.0",
+    "mocha": "^9.2.2",
     "standard": "^12.0.1"
   }
 }
