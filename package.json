@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "description": "A utility for deploying static files to AWS S3. Intended primarily for use in CI/CD tasks, eg. publishing a tagged release using gulp.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "pretest": "standard",
     "test": "./node_modules/.bin/mocha --reporter spec"
@@ -36,12 +37,13 @@
     "npm": ">= 6.12.0"
   },
   "dependencies": {
-    "aws-sdk": "^2.323.0",
-    "file-type": "^10.4.0",
-    "read-chunk": "^3.0.0"
+    "aws-sdk": "^2.1103.0",
+    "file-type": "^17.1.1",
+    "read-chunk": "^4.0.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "eslint": "^5.16.0",
     "mocha": "^8.4.0",
     "standard": "^12.0.1"
   }

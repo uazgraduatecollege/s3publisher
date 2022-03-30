@@ -1,11 +1,12 @@
 /* eslint-disable */
 'use strict'
 
-const AWS = require('aws-sdk')
-const expect = require('chai').expect
-const fs = require('fs')
+import AWS from 'aws-sdk'
+import S3Publisher from '../index.js'
+import { mkdir, rmdir, stat } from 'fs'
+import { expect } from 'chai'
+
 const s3 = new AWS.S3()
-const S3Publisher = require('../index')
 
 let testPublisher = new S3Publisher({
   bucket: process.env.AWS_S3_BUCKET,
@@ -49,9 +50,9 @@ describe('S3Publisher', () => {
     await cleanRemote()
 
     // create an empty dir to test
-    await fs.stat(testDir1, (err, stats) => {
+    await stat(testDir1, (err, stats) => {
       if (err) {
-        fs.mkdir(testDir1, (err) => {
+        mkdir(testDir1, (err) => {
           if (err) {
             console.error(err)
           }
@@ -65,9 +66,9 @@ describe('S3Publisher', () => {
     await cleanRemote()
 
     // remove the empty dir
-    await fs.stat(testDir1, (err, stats) => {
+    await stat(testDir1, (err, stats) => {
       if (stats.isDirectory()) {
-        fs.rmdir(testDir1, (err) => {
+        rmdir(testDir1, (err) => {
           if (err) {
             console.error(err)
           }
@@ -104,7 +105,10 @@ describe('S3Publisher', () => {
     })
 
     it('Does not upload files that match defined exclusions', async () => {
+      // cleanup remote path
+      await cleanRemote()
       await testPublisher.publish(testDir0, (err, data) => {
+        expect(err).to.be.null
         expect(data).to.be.an('object')
         expect(data).to.have.property('ETag')
         expect(data).to.have.property('s3file')
@@ -113,12 +117,15 @@ describe('S3Publisher', () => {
         Bucket: process.env.AWS_S3_BUCKET,
         Key: 'testS3Publisher/script.js.map'
       }, (err, data) => {
-        expect(err).to.be.an('Error')
+        expect(data).to.be.null
       })
     })
 
     it('Uploads all files in a directory tree', async () => {
+      // cleanup remote path
+      await cleanRemote()
       await testPublisher.publish(testDir0, (err, data) => {
+        expect(err).to.be.null
         expect(data).to.be.an('object')
         expect(data).to.have.property('ETag')
         expect(data).to.have.property('s3file')
@@ -128,6 +135,7 @@ describe('S3Publisher', () => {
           Bucket: process.env.AWS_S3_BUCKET,
           Prefix: 'testS3Publisher'
         }, (err, data) => {
+          expect(err).to.be.null
           expect(data).to.have.property('Contents')
           expect(data).to.have.property('KeyCount')
           expect(data.KeyCount).to.equal(data.Contents.length)
@@ -140,9 +148,13 @@ describe('S3Publisher', () => {
       const fullSourcePublisher = new S3Publisher({
         keyPrefix: 'testS3Publisher',
         bucket: process.env.AWS_S3_BUCKET,
+        exclusions: ['.map'],
         preserveSourceDir: true
       })
+      // cleanup remote path
+      await cleanRemote()
       await fullSourcePublisher.publish(testDir0, (err, data) => {
+        expect(err).to.be.null
         expect(data).to.be.an('object')
         expect(data).to.have.property('ETag')
         expect(data).to.have.property('s3file')
@@ -151,15 +163,17 @@ describe('S3Publisher', () => {
         Bucket: process.env.AWS_S3_BUCKET,
         Prefix: 'testS3Publisher/test'
       }, (err, data) => {
-          expect(data).to.have.property('Contents')
-          expect(data).to.have.property('KeyCount')
-          expect(data.KeyCount).to.equal(data.Contents.length)
-          expect(data.KeyCount).to.be.gt(0)
+        expect(err).to.be.null
+        expect(data).to.have.property('Contents')
+        expect(data).to.have.property('KeyCount')
+        expect(data.KeyCount).to.equal(data.Contents.length)
+        expect(data.KeyCount).to.be.gt(0)
       })
       await s3.getObject({
         Bucket: process.env.AWS_S3_BUCKET,
-        Key: 'testS3Publisher/test/foo/script.js.map'
+        Key: 'testS3Publisher/test/foo/script.js'
       }, (err, data) => {
+        expect(err).to.be.null
         expect(data).to.have.property('ETag')
         expect(data).to.have.property('ContentLength')
         expect(data.ContentLength).to.be.gt(0)
