@@ -1,12 +1,13 @@
 'use strict'
 
-const AWS = require('aws-sdk')
-const s3 = new AWS.S3()
-const fs = require('fs')
-const fileType = require('file-type')
-const path = require('path')
-const readChunk = require('read-chunk')
+import AWS from 'aws-sdk'
+import { fileTypeFromFile } from 'file-type'
+import { readdir, readFileSync, statSync } from 'fs'
+import path from 'path'
+
+/* eslint-disable-next-line */
 const _awsPutFile = Symbol('awsPutFile')
+const s3 = new AWS.S3()
 
 class S3Publisher {
   /**
@@ -23,15 +24,15 @@ class S3Publisher {
     if (typeof params === 'undefined') {
       throw new Error('S3Publisher must be instantiated with a params object')
 
-    // params must include at least the 'bucket' parameter
+      // params must include at least the 'bucket' parameter
     } else if (typeof params.bucket === 'undefined') {
       throw new Error('S3Publisher must be instantiated with the bucket parameter')
 
-    // the 'bucket' param must be a non-empty string
+      // the 'bucket' param must be a non-empty string
     } else if (typeof params.bucket === 'string' && params.bucket.length === 0) {
       throw new Error('S3Publisher must be instantiated with a valid bucket name')
 
-    // good-to-go
+      // good-to-go
     } else {
       this.params = {}
       this.params.bucket = params.bucket
@@ -42,10 +43,10 @@ class S3Publisher {
   }
 
   [_awsPutFile] (params, cb) {
-    let putParams = {
+    const putParams = {
       Bucket: params.bucket,
       Key: params.remoteFilepath,
-      Body: fs.readFileSync(params.localFilepath),
+      Body: readFileSync(params.localFilepath),
       ACL: 'public-read',
       ContentType: params.mimeType
     }
@@ -53,7 +54,7 @@ class S3Publisher {
       if (err) {
         return cb(err)
       } else {
-        let s3file = `s3://${putParams.Bucket}/${putParams.Key}`
+        const s3file = `s3://${putParams.Bucket}/${putParams.Key}`
         data.s3file = s3file
         cb(null, data)
       }
@@ -85,14 +86,14 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
   }
 
   // process dir contents
-  fs.readdir(aDir, (err, files) => {
+  readdir(aDir, (err, files) => {
     if (err) {
       return cb(err)
     }
 
     for (const nextFile of files) {
-      let thisFilepath = path.join(aDir, nextFile)
-      let nextStats = fs.statSync(thisFilepath)
+      const thisFilepath = path.join(aDir, nextFile)
+      const nextStats = statSync(thisFilepath)
 
       // recursively upload files in child directories
       if (nextStats.isDirectory()) {
@@ -108,7 +109,8 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
       // determine content type & upload files
       if (nextStats.isFile()) {
         let mimeType = 'application/octet-stream'
-        let fileExt = path.extname(thisFilepath)
+        const fileExt = path.extname(thisFilepath)
+        let ftDetected = null
 
         switch (fileExt) {
           case '.css':
@@ -152,8 +154,8 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
             break
 
           default:
-            let ftDetected = fileType(readChunk.sync(thisFilepath, 0, 4100))
-            if (ftDetected !== null) {
+            ftDetected = fileTypeFromFile(thisFilepath)
+            if (ftDetected !== null && typeof ftDetected !== 'undefined') {
               mimeType = ftDetected.mime
             } else {
               mimeType = 'application/octet-stream'
@@ -169,11 +171,11 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
           if (this.params.preserveSourceDir) {
             remoteFilepath = path.join(this.params.keyPrefix, aDir, nextFile)
 
-          // handle subdirectory paths
+            // handle subdirectory paths
           } else if (cycle > 0) {
-            let origPathElems = this.origDir.split(path.sep)
-            let dirPathElems = aDir.split(path.sep)
-            let outPathElems = []
+            const origPathElems = this.origDir.split(path.sep)
+            const dirPathElems = aDir.split(path.sep)
+            const outPathElems = []
 
             for (let i = 0; i < dirPathElems.length; i++) {
               const nextPathElem = dirPathElems[i]
@@ -183,16 +185,16 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
               }
             }
 
-            let outPath = outPathElems.join(path.sep)
+            const outPath = outPathElems.join(path.sep)
             remoteFilepath = path.join(this.params.keyPrefix, outPath, nextFile)
 
-          // handle root dir files
+            // handle root dir files
           } else {
             remoteFilepath = path.join(this.params.keyPrefix, nextFile)
           }
 
           // assemble the putObject parameters
-          let putParams = {
+          const putParams = {
             bucket: this.params.bucket,
             remoteFilepath: remoteFilepath,
             localFilepath: thisFilepath,
@@ -212,4 +214,4 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
   })
 }
 
-module.exports = S3Publisher
+export default S3Publisher
