@@ -1,6 +1,6 @@
 {
   "name": "@uazgraduatecollege/s3publisher",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A utility for deploying static files to AWS S3. Intended primarily for use in CI/CD tasks, eg. publishing a tagged release using gulp.",
   "main": "index.js",
   "type": "module",
