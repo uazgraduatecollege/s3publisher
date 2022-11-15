@@ -196,9 +196,9 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
           // assemble the putObject parameters
           const putParams = {
             bucket: this.params.bucket,
-            remoteFilepath: remoteFilepath,
+            remoteFilepath,
             localFilepath: thisFilepath,
-            mimeType: mimeType
+            mimeType
           }
 
           this[_awsPutFile](putParams, (err, data) => {
