@@ -1,12 +1,12 @@
 /* eslint-disable */
 'use strict'
 
-import AWS from 'aws-sdk'
+import { S3 } from '@aws-sdk/client-s3'
 import S3Publisher from '../index.js'
 import { mkdir, rmdir, stat } from 'fs'
 import { expect } from 'chai'
 
-const s3 = new AWS.S3()
+const s3 = new S3()
 
 let testPublisher = new S3Publisher({
   bucket: process.env.AWS_S3_BUCKET,
