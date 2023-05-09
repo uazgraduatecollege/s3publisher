@@ -1,13 +1,13 @@
 'use strict'
 
-import AWS from 'aws-sdk'
+import { S3 } from '@aws-sdk/client-s3'
 import { fileTypeFromFile } from 'file-type'
 import { readdir, readFileSync, statSync } from 'fs'
 import path from 'path'
 
 /* eslint-disable-next-line */
 const _awsPutFile = Symbol('awsPutFile')
-const s3 = new AWS.S3()
+const s3 = new S3()
 
 class S3Publisher {
   /**
