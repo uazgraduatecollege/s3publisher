@@ -9,15 +9,12 @@ Single-file Node.js ES module (`index.js`) that uploads local files to AWS S3. N
 - **Lint:** `npx standard` (or runs automatically as `pretest` before tests)
 - **Test:** `npm test` — runs `standard` then `mocha --reporter spec`
 
-Tests require a live AWS S3 bucket. Set these env vars before running:
-```
-AWS_S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
-```
+Tests run against a local [s3rver](https://www.npmjs.com/package/s3rver) mock. No AWS credentials required.
 
 ## Architecture
 
 - `index.js` — sole source file, exports `S3Publisher` class
-- `test/index.js` — Mocha + Chai tests against real S3 (not mocked)
+- `test/index.js` — Mocha + Chai tests using s3rver (local S3 mock)
 - No TypeScript, no build, no codegen, no transpilation
 
 ## Conventions

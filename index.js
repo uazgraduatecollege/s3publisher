@@ -7,7 +7,6 @@ import path from 'path'
 
 /* eslint-disable-next-line */
 const _awsPutFile = Symbol('awsPutFile')
-const s3 = new S3()
 
 class S3Publisher {
   /**
@@ -18,6 +17,7 @@ class S3Publisher {
    * @params.exclusions array A list of file extensions to be excluded when uploading
    * @params.keyPrefix string A directory path to be created in the remote bucket
    * @params.preserveSourceTree boolean Whether
+   * @params.s3Client object Optional custom S3 client instance
    */
   constructor (params) {
     // params must be passed
@@ -39,6 +39,7 @@ class S3Publisher {
       this.params.exclusions = params.exclusions || []
       this.params.keyPrefix = params.keyPrefix || ''
       this.params.preserveSourceDir = params.preserveSourceDir || false
+      this.s3 = params.s3Client || new S3()
     }
   }
 
@@ -50,7 +51,7 @@ class S3Publisher {
       ACL: 'public-read',
       ContentType: params.mimeType
     }
-    s3.putObject(putParams, (err, data) => {
+    this.s3.putObject(putParams, (err, data) => {
       if (err) {
         return cb(err)
       } else {

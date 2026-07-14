@@ -50,6 +50,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.1.1",
     "mocha": "^10.8.2",
+    "s3rver": "^3.7.1",
     "standard": "^17.0.0"
   }
 }
