@@ -1,6 +1,8 @@
 /* eslint-disable */
 'use strict'
 
+import 'dotenv/config'
+
 import { S3 } from '@aws-sdk/client-s3'
 import S3Publisher from '../index.js'
 import { mkdir, rmdir, stat } from 'fs'
