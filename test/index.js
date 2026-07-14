@@ -195,5 +195,81 @@ describe('S3Publisher', () => {
       expect(obj.ContentType).to.be.a('string')
       expect(obj.ContentType).to.equal('text/javascript')
     })
+
+    it('Sets the correct content type for each file extension', async () => {
+      const noExclPublisher = new S3Publisher({
+        bucket: BUCKET,
+        keyPrefix: 'testS3Publisher',
+        s3Client: s3
+      })
+      await cleanRemote()
+      await publishAsync(noExclPublisher, testDir0)
+
+      const expected = {
+        'style.css': 'text/css',
+        'comma.csv': 'text/csv',
+        'JSON.json': 'application/json',
+        'markdown.md': 'text/markdown',
+        'script.js': 'text/javascript',
+        'script.js.map': 'text/javascript',
+        'text.txt': 'text/plain',
+        'YAML.yml': 'text/x-yaml',
+        'YAML.yaml': 'text/x-yaml',
+        'generic': 'application/octet-stream'
+      }
+
+      for (const [file, expectedType] of Object.entries(expected)) {
+        const obj = await s3.getObject({
+          Bucket: BUCKET,
+          Key: `testS3Publisher/${file}`
+        })
+        expect(obj.ContentType).to.equal(expectedType)
+      }
+    })
+
+    it('Includes the correct s3:// URI in the returned data', async () => {
+      await cleanRemote()
+      const data = await publishAsync(testPublisher, testDir0)
+      expect(data.s3file).to.match(/^s3:\/\/test-bucket\/testS3Publisher\//)
+    })
+
+    it('Uploads files to the keyPrefix path without preserving source dir', async () => {
+      const prefixPublisher = new S3Publisher({
+        bucket: BUCKET,
+        keyPrefix: 'myprefix',
+        exclusions: ['.map'],
+        s3Client: s3
+      })
+      await cleanRemote()
+      await publishAsync(prefixPublisher, testDir0)
+      const list = await s3.listObjectsV2({
+        Bucket: BUCKET,
+        Prefix: 'myprefix'
+      })
+      expect(list.KeyCount).to.be.gt(0)
+      for (const item of list.Contents) {
+        expect(item.Key).to.match(/^myprefix\//)
+        expect(item.Key).to.not.include('test/foo')
+      }
+    })
+
+    it('Excludes multiple file extensions', async () => {
+      const multiExclPublisher = new S3Publisher({
+        bucket: BUCKET,
+        keyPrefix: 'testS3Publisher',
+        exclusions: ['.map', '.csv'],
+        s3Client: s3
+      })
+      await cleanRemote()
+      await publishAsync(multiExclPublisher, testDir0)
+      const list = await s3.listObjectsV2({
+        Bucket: BUCKET,
+        Prefix: 'testS3Publisher'
+      })
+      for (const item of list.Contents) {
+        expect(item.Key).to.not.match(/\.map$/)
+        expect(item.Key).to.not.match(/\.csv$/)
+      }
+    })
   })
 })
