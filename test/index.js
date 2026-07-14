@@ -9,7 +9,8 @@ import S3rver from 's3rver'
 import { mkdir, rmdir, stat } from 'fs'
 import { expect } from 'chai'
 
-const BUCKET = 'test-bucket'
+const useLiveAWS = typeof process.env.AWS_S3_BUCKET === 'string' && process.env.AWS_S3_BUCKET.length > 0
+const BUCKET = useLiveAWS ? process.env.AWS_S3_BUCKET : 'test-bucket'
 let s3
 let testPublisher
 let s3rverInstance
@@ -44,23 +45,7 @@ const cleanRemote = async () => {
 
 describe('S3Publisher', () => {
   before((done) => {
-    s3rverInstance = new S3rver({
-      port: 4568,
-      address: 'localhost',
-      silent: true,
-      configureBuckets: [{ name: BUCKET }]
-    }).run((err) => {
-      if (err) return done(err)
-
-      s3 = new S3({
-        endpoint: 'http://localhost:4568',
-        forcePathStyle: true,
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER'
-        }
-      })
-
+    const setup = () => {
       testPublisher = new S3Publisher({
         bucket: BUCKET,
         exclusions: ['.map'],
@@ -70,7 +55,6 @@ describe('S3Publisher', () => {
 
       cleanRemote()
         .then(() => {
-          // create an empty dir to test
           stat(testDir1, (err) => {
             if (err) {
               mkdir(testDir1, (err) => {
@@ -83,21 +67,53 @@ describe('S3Publisher', () => {
           })
         })
         .catch(done)
-    })
+    }
+
+    if (useLiveAWS) {
+      s3 = new S3()
+      setup()
+    } else {
+      s3rverInstance = new S3rver({
+        port: 4568,
+        address: 'localhost',
+        silent: true,
+        configureBuckets: [{ name: BUCKET }]
+      }).run((err) => {
+        if (err) return done(err)
+
+        s3 = new S3({
+          endpoint: 'http://localhost:4568',
+          forcePathStyle: true,
+          credentials: {
+            accessKeyId: 'S3RVER',
+            secretAccessKey: 'S3RVER'
+          }
+        })
+
+        setup()
+      })
+    }
   })
 
   after((done) => {
     cleanRemote()
       .then(() => {
-        // remove the empty dir
         stat(testDir1, (err, stats) => {
+          const cleanup = () => {
+            if (s3rverInstance) {
+              s3rverInstance.close(done)
+            } else {
+              done()
+            }
+          }
+
           if (stats && stats.isDirectory()) {
             rmdir(testDir1, (err) => {
               if (err) console.error(err)
-              s3rverInstance.close(done)
+              cleanup()
             })
           } else {
-            s3rverInstance.close(done)
+            cleanup()
           }
         })
       })
@@ -230,7 +246,7 @@ describe('S3Publisher', () => {
     it('Includes the correct s3:// URI in the returned data', async () => {
       await cleanRemote()
       const data = await publishAsync(testPublisher, testDir0)
-      expect(data.s3file).to.match(/^s3:\/\/test-bucket\/testS3Publisher\//)
+      expect(data.s3file).to.match(new RegExp(`^s3://${BUCKET}/testS3Publisher/`))
     })
 
     it('Uploads files to the keyPrefix path without preserving source dir', async () => {
