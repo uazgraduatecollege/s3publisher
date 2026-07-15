@@ -6,8 +6,8 @@ Single-file Node.js ES module (`index.js`) that uploads local files to AWS S3. N
 
 ## Commands
 
-- **Lint:** `npx standard` (or runs automatically as `pretest` before tests)
-- **Test:** `npm test` — runs `standard` then `mocha --reporter spec`
+- **Lint:** `npx eslint .` (or runs automatically as `pretest` before tests)
+- **Test:** `npm test` — runs `eslint .` then `mocha --reporter spec`
 - In CI/CD, use `npm ci` instead of `npm install` for deterministic builds from the lock file.
 
 Tests run against a local [s3rver](https://www.npmjs.com/package/s3rver) mock by default. To test against a real S3 bucket, set `AWS_S3_BUCKET` (plus standard AWS credential env vars) before running.
@@ -22,7 +22,9 @@ Tests run against a local [s3rver](https://www.npmjs.com/package/s3rver) mock by
 ## Conventions
 
 - `"type": "module"` in package.json — all `.js` files are ES modules
-- Linting via `standard` (StandardJS style). ESLint config exists but `standard` is the actual linter used
+- Linting via [neostandard](https://github.com/neostandard/neostandard) with ESLint 9 flat config (`eslint.config.js`). Run `npx eslint .` to lint
 - 2-space indent, LF line endings
 - `test/` directory is linted along with source files
 - When committing with issue references (e.g. "references #43", "closes #43"), use the exact keyword the user provides
+- Don't commit changes unless the user explicity instructs you to do so
+

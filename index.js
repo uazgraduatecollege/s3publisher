@@ -5,7 +5,6 @@ import { fileTypeFromFile } from 'file-type'
 import { readdir, createReadStream, lstatSync } from 'fs'
 import path from 'path'
 
-/* eslint-disable-next-line */
 const _awsPutFile = Symbol('awsPutFile')
 
 class S3Publisher {
