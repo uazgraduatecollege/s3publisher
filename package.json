@@ -1,6 +1,6 @@
 {
   "name": "@uazgraduatecollege/s3publisher",
-  "version": "0.4.4",
+  "version": "1.0.0",
   "description": "A utility for deploying static files to AWS S3. Intended primarily for use in CI/CD tasks, eg. publishing a tagged release using gulp.",
   "main": "index.js",
   "type": "module",
@@ -27,28 +27,29 @@
   "maintainers": [
     "UA Graduate College IT <help@grad.arizona.edu>"
   ],
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "UNLICENSED",
   "bugs": {
     "url": "https://github.com/uazgraduatecollege/s3publisher/issues"
   },
   "homepage": "https://github.com/uazgraduatecollege/s3publisher#readme",
   "engines": {
-    "node": ">= 10.16.0",
-    "npm": ">= 6.12.0"
+    "node": ">= 20",
+    "npm": ">= 9"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1086.0",
-    "file-type": "^21.3.2",
-    "read-chunk": "^4.0.3"
+    "file-type": "^21.3.2"
   },
   "devDependencies": {
     "chai": "^4.3.7",
+    "dotenv": "^16.4.7",
     "eslint": "^8.27.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.1.1",
     "mocha": "^10.8.2",
+    "s3rver": "^3.7.1",
     "standard": "^17.0.0"
   }
 }
