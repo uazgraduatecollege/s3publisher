@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "pretest": "standard",
-    "test": "./node_modules/.bin/mocha --reporter spec"
+    "test": "./node_modules/.bin/mocha --reporter spec",
+    "test:example": "node example.js"
   },
   "repository": {
     "type": "git",

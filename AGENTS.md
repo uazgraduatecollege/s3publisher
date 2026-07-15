@@ -16,6 +16,7 @@ Tests run against a local [s3rver](https://www.npmjs.com/package/s3rver) mock by
 
 - `index.js` — sole source file, exports `S3Publisher` class
 - `test/index.js` — Mocha + Chai tests using s3rver (local S3 mock)
+- `example.js` — runnable example, demonstrates S3Publisher usage with s3rver mock or live AWS
 - No TypeScript, no build, no codegen, no transpilation
 
 ## Conventions
