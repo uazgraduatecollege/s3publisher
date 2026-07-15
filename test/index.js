@@ -1,6 +1,7 @@
 'use strict'
 
-import 'dotenv/config'
+import dotenv from 'dotenv'
+dotenv.config({ quiet: true })
 
 import { S3 } from '@aws-sdk/client-s3'
 import S3Publisher from '../index.js'

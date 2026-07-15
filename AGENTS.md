@@ -26,5 +26,6 @@ Tests run against a local [s3rver](https://www.npmjs.com/package/s3rver) mock by
 - 2-space indent, LF line endings
 - `test/` directory is linted along with source files
 - When committing with issue references (e.g. "references #43", "closes #43"), use the exact keyword the user provides
+- Reference phrases should be on the last line of the commit message, separated by a blank line
 - Don't commit changes unless the user explicity instructs you to do so
 
