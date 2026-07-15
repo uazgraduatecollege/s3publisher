@@ -25,3 +25,4 @@ Tests run against a local [s3rver](https://www.npmjs.com/package/s3rver) mock by
 - Linting via `standard` (StandardJS style). ESLint config exists but `standard` is the actual linter used
 - 2-space indent, LF line endings
 - `test/` directory is linted along with source files
+- When committing with issue references (e.g. "references #43", "closes #43"), use the exact keyword the user provides
