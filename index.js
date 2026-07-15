@@ -142,7 +142,8 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
       return cb(err)
     }
 
-    let pending = files.length
+    if (files.length === 0) return cb(null)
+
     let called = false
 
     const finish = (err, data) => {
@@ -151,10 +152,7 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
         called = true
         return cb(err)
       }
-      if (--pending === 0) {
-        called = true
-        cb(null, data)
-      }
+      cb(null, data)
     }
 
     for (const nextFile of files) {
@@ -163,7 +161,6 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
       try {
         nextStats = lstatSync(thisFilepath)
       } catch (err) {
-        finish()
         continue
       }
 
@@ -268,18 +265,14 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
           }
 
           this[_awsPutFile](putParams, finish)
-        } else {
-          finish()
         }
       }
 
       // skip symlinks and other special files
       if (!nextStats.isDirectory() && !nextStats.isFile()) {
-        finish()
+        continue
       }
     }
-
-    if (pending === 0) cb(null)
   })
 }
 

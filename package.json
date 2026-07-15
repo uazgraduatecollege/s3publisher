@@ -1,12 +1,13 @@
 {
   "name": "@uazgraduatecollege/s3publisher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A utility for deploying static files to AWS S3. Intended primarily for use in CI/CD tasks, eg. publishing a tagged release using gulp.",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "pretest": "standard",
-    "test": "./node_modules/.bin/mocha --reporter spec"
+    "test": "./node_modules/.bin/mocha --reporter spec",
+    "test:example": "node example.js"
   },
   "repository": {
     "type": "git",
