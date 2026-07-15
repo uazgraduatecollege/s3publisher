@@ -27,19 +27,18 @@
   "maintainers": [
     "UA Graduate College IT <help@grad.arizona.edu>"
   ],
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "UNLICENSED",
   "bugs": {
     "url": "https://github.com/uazgraduatecollege/s3publisher/issues"
   },
   "homepage": "https://github.com/uazgraduatecollege/s3publisher#readme",
   "engines": {
-    "node": ">= 10.16.0",
-    "npm": ">= 6.12.0"
+    "node": ">= 20",
+    "npm": ">= 9"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1086.0",
-    "file-type": "^21.3.2",
-    "read-chunk": "^4.0.3"
+    "file-type": "^21.3.2"
   },
   "devDependencies": {
     "chai": "^4.3.7",

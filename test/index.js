@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-env mocha */
 'use strict'
 
 import 'dotenv/config'
@@ -6,7 +6,7 @@ import 'dotenv/config'
 import { S3 } from '@aws-sdk/client-s3'
 import S3Publisher from '../index.js'
 import S3rver from 's3rver'
-import { mkdir, rmdir, stat } from 'fs'
+import { mkdir, rmdir, stat, symlink, unlink } from 'fs'
 import { expect } from 'chai'
 
 const useLiveAWS = typeof process.env.AWS_S3_BUCKET === 'string' && process.env.AWS_S3_BUCKET.length > 0
@@ -15,9 +15,10 @@ let s3
 let testPublisher
 let s3rverInstance
 
-let testDir0 = './test/foo' // test dir & files
-let testDir1 = './test/empty' // empty
-let testDir2 = './test/nil' // doesn't exist
+const testDir0 = './test/foo' // test dir & files
+const testDir1 = './test/empty' // empty
+const testDir2 = './test/nil' // doesn't exist
+const testSymlink = './test/foo/symlink-to-outside' // symlink pointing outside test dir
 
 const publishAsync = (publisher, dir) => new Promise((resolve, reject) => {
   publisher.publish(dir, (err, data) => {
@@ -59,10 +60,16 @@ describe('S3Publisher', () => {
             if (err) {
               mkdir(testDir1, (err) => {
                 if (err) console.error(err)
-                done()
+                symlink('/etc/hostname', testSymlink, (err) => {
+                  if (err) console.error(err)
+                  done()
+                })
               })
             } else {
-              done()
+              symlink('/etc/hostname', testSymlink, (err) => {
+                if (err) console.error(err)
+                done()
+              })
             }
           })
         })
@@ -98,52 +105,84 @@ describe('S3Publisher', () => {
   after((done) => {
     cleanRemote()
       .then(() => {
-        stat(testDir1, (err, stats) => {
-          const cleanup = () => {
-            if (s3rverInstance) {
-              s3rverInstance.close(done)
-            } else {
-              done()
+        unlink(testSymlink, () => {
+          stat(testDir1, (_err, stats) => {
+            const cleanup = () => {
+              if (s3rverInstance) {
+                s3rverInstance.close(done)
+              } else {
+                done()
+              }
             }
-          }
 
-          if (stats && stats.isDirectory()) {
-            rmdir(testDir1, (err) => {
-              if (err) console.error(err)
+            if (stats && stats.isDirectory()) {
+              rmdir(testDir1, (err) => {
+                if (err) console.error(err)
+                cleanup()
+              })
+            } else {
               cleanup()
-            })
-          } else {
-            cleanup()
-          }
+            }
+          })
         })
       })
       .catch(done)
   })
 
   it('Should error if not instantiated with a params object', async () => {
-    await expect(function () { new S3Publisher() }).to.throw(Error)
+    await expect(function () { new S3Publisher() }).to.throw(Error) // eslint-disable-line no-new
   })
 
   it('Should error if not instantiated with a valid bucket parameter', async () => {
-    await expect(function () { new S3Publisher({}) }).to.throw(Error)
-    await expect(function () { new S3Publisher({ bucket: "" }) }).to.throw(Error)
+    await expect(function () { new S3Publisher({}) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: '' }) }).to.throw(Error) // eslint-disable-line no-new
   })
 
   it('It instantiates a valid object when when required parameters are passed to the constructor', async () => {
     await expect(testPublisher).to.be.an.instanceof(S3Publisher)
   })
 
+  it('Rejects bucket names that do not conform to S3 naming rules', async () => {
+    await expect(function () { new S3Publisher({ bucket: 'ab' }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'a'.repeat(64) }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'Bucket' }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: '-invalid' }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'valid-bucket.name' }) }).to.not.throw(Error) // eslint-disable-line no-new
+  })
+
+  it('Rejects keyPrefix values containing path traversal sequences', async () => {
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', keyPrefix: '../etc' }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', keyPrefix: '/absolute' }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', keyPrefix: 'valid/prefix' }) }).to.not.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', keyPrefix: '' }) }).to.not.throw(Error) // eslint-disable-line no-new
+  })
+
+  it('Rejects invalid types for constructor parameters', async () => {
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', exclusions: 'not-an-array' }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', exclusions: 42 }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', exclusions: ['.map'] }) }).to.not.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', keyPrefix: 42 }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', preserveSourceDir: 'yes' }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', preserveSourceDir: true }) }).to.not.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', acl: 42 }) }).to.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', acl: 'public-read' }) }).to.not.throw(Error) // eslint-disable-line no-new
+    await expect(function () { new S3Publisher({ bucket: 'test-bucket', s3Client: 'not-an-object' }) }).to.throw(Error) // eslint-disable-line no-new
+  })
+
   describe('S3Publisher.publish()', () => {
     it('Returns an error if the source directory does not exist', async () => {
       await testPublisher.publish(testDir2, (err, data) => {
         expect(err).to.be.an('Error')
+        // eslint-disable-next-line no-unused-expressions
         expect(data).to.be.undefined
       })
     })
 
     it('Does not bork when encountering an empty directory', async () => {
       await testPublisher.publish(testDir1, (err, data) => {
+        // eslint-disable-next-line no-unused-expressions
         expect(err).to.be.null
+        expect(data).to.be.undefined // eslint-disable-line no-unused-expressions
       })
     })
 
@@ -158,6 +197,7 @@ describe('S3Publisher', () => {
         Bucket: BUCKET,
         Key: 'testS3Publisher/script.js.map'
       }).catch(() => null)
+      // eslint-disable-next-line no-unused-expressions
       expect(obj).to.be.null
     })
 
@@ -231,7 +271,7 @@ describe('S3Publisher', () => {
         'text.txt': 'text/plain',
         'YAML.yml': 'text/x-yaml',
         'YAML.yaml': 'text/x-yaml',
-        'generic': 'application/octet-stream'
+        generic: 'application/octet-stream'
       }
 
       for (const [file, expectedType] of Object.entries(expected)) {
@@ -286,6 +326,47 @@ describe('S3Publisher', () => {
         expect(item.Key).to.not.match(/\.map$/)
         expect(item.Key).to.not.match(/\.csv$/)
       }
+    })
+
+    it('Skips symlinks during upload', async () => {
+      await cleanRemote()
+      await publishAsync(testPublisher, testDir0)
+      const list = await s3.listObjectsV2({
+        Bucket: BUCKET,
+        Prefix: 'testS3Publisher'
+      })
+      for (const item of list.Contents) {
+        expect(item.Key).to.not.include('symlink-to-outside')
+      }
+    })
+
+    it('Uploads the exact expected number of files', async () => {
+      await cleanRemote()
+      await publishAsync(testPublisher, testDir0)
+      const list = await s3.listObjectsV2({
+        Bucket: BUCKET,
+        Prefix: 'testS3Publisher'
+      })
+      // test/foo contains 10 files, minus 1 excluded .map file = 9
+      // test/foo/bar contains 10 files, minus 1 excluded .map file = 9
+      // total = 18
+      expect(list.KeyCount).to.equal(18)
+    })
+
+    it('Applies the specified ACL to uploaded objects', async () => {
+      const aclPublisher = new S3Publisher({
+        bucket: BUCKET,
+        keyPrefix: 'testS3Publisher',
+        s3Client: s3,
+        acl: 'public-read'
+      })
+      await cleanRemote()
+      await publishAsync(aclPublisher, testDir0)
+      const obj = await s3.getObject({
+        Bucket: BUCKET,
+        Key: 'testS3Publisher/script.js'
+      })
+      expect(obj).to.have.property('ETag')
     })
   })
 })

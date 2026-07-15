@@ -2,7 +2,7 @@
 
 import { S3 } from '@aws-sdk/client-s3'
 import { fileTypeFromFile } from 'file-type'
-import { readdir, readFileSync, statSync } from 'fs'
+import { readdir, createReadStream, lstatSync } from 'fs'
 import path from 'path'
 
 /* eslint-disable-next-line */
@@ -18,6 +18,7 @@ class S3Publisher {
    * @params.keyPrefix string A directory path to be created in the remote bucket
    * @params.preserveSourceTree boolean Whether
    * @params.s3Client object Optional custom S3 client instance
+   * @params.acl string Optional S3 ACL value (e.g. 'public-read'). Omitted by default.
    */
   constructor (params) {
     // params must be passed
@@ -32,13 +33,60 @@ class S3Publisher {
     } else if (typeof params.bucket === 'string' && params.bucket.length === 0) {
       throw new Error('S3Publisher must be instantiated with a valid bucket name')
 
+      // the 'bucket' param must conform to S3 naming rules
+    } else if (params.bucket.length < 3 || params.bucket.length > 63 ||
+        !/^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$/.test(params.bucket)) {
+      throw new Error('S3Publisher must be instantiated with a valid bucket name')
+
       // good-to-go
     } else {
       this.params = {}
       this.params.bucket = params.bucket
+
+      if (params.exclusions !== undefined && params.exclusions !== null) {
+        if (!Array.isArray(params.exclusions)) {
+          throw new Error('exclusions must be an array')
+        }
+      }
       this.params.exclusions = params.exclusions || []
+
+      if (params.keyPrefix !== undefined && params.keyPrefix !== null) {
+        if (typeof params.keyPrefix !== 'string') {
+          throw new Error('keyPrefix must be a string')
+        }
+      }
       this.params.keyPrefix = params.keyPrefix || ''
+
+      // validate keyPrefix against path traversal
+      if (this.params.keyPrefix) {
+        if (path.isAbsolute(this.params.keyPrefix)) {
+          throw new Error('keyPrefix must not be an absolute path')
+        }
+        const segments = this.params.keyPrefix.split(path.sep)
+        if (segments.includes('..')) {
+          throw new Error('keyPrefix must not contain path traversal sequences')
+        }
+      }
+
+      if (params.preserveSourceDir !== undefined && params.preserveSourceDir !== null) {
+        if (typeof params.preserveSourceDir !== 'boolean') {
+          throw new Error('preserveSourceDir must be a boolean')
+        }
+      }
       this.params.preserveSourceDir = params.preserveSourceDir || false
+
+      if (params.acl !== undefined && params.acl !== null) {
+        if (typeof params.acl !== 'string') {
+          throw new Error('acl must be a string')
+        }
+      }
+      this.params.acl = params.acl
+
+      if (params.s3Client !== undefined && params.s3Client !== null) {
+        if (typeof params.s3Client !== 'object') {
+          throw new Error('s3Client must be an object')
+        }
+      }
       this.s3 = params.s3Client || new S3()
     }
   }
@@ -47,9 +95,11 @@ class S3Publisher {
     const putParams = {
       Bucket: params.bucket,
       Key: params.remoteFilepath,
-      Body: readFileSync(params.localFilepath),
-      ACL: 'public-read',
+      Body: createReadStream(params.localFilepath),
       ContentType: params.mimeType
+    }
+    if (this.params.acl) {
+      putParams.ACL = this.params.acl
     }
     this.s3.putObject(putParams, (err, data) => {
       if (err) {
@@ -92,19 +142,34 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
       return cb(err)
     }
 
+    let pending = files.length
+    let called = false
+
+    const finish = (err, data) => {
+      if (called) return
+      if (err) {
+        called = true
+        return cb(err)
+      }
+      if (--pending === 0) {
+        called = true
+        cb(null, data)
+      }
+    }
+
     for (const nextFile of files) {
       const thisFilepath = path.join(aDir, nextFile)
-      const nextStats = statSync(thisFilepath)
+      let nextStats
+      try {
+        nextStats = lstatSync(thisFilepath)
+      } catch (err) {
+        finish()
+        continue
+      }
 
       // recursively upload files in child directories
       if (nextStats.isDirectory()) {
-        this.publish(thisFilepath, recursionCycle + 1, (err, data) => {
-          if (err) {
-            return cb(err)
-          } else {
-            cb(null, data)
-          }
-        })
+        this.publish(thisFilepath, recursionCycle + 1, finish)
       }
 
       // determine content type & upload files
@@ -202,16 +267,19 @@ S3Publisher.prototype.publish = function publish (aDir, cycle, cb) {
             mimeType
           }
 
-          this[_awsPutFile](putParams, (err, data) => {
-            if (err) {
-              return cb(err)
-            } else {
-              cb(null, data)
-            }
-          })
+          this[_awsPutFile](putParams, finish)
+        } else {
+          finish()
         }
       }
+
+      // skip symlinks and other special files
+      if (!nextStats.isDirectory() && !nextStats.isFile()) {
+        finish()
+      }
     }
+
+    if (pending === 0) cb(null)
   })
 }
 
