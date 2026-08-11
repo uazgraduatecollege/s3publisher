@@ -16,3 +16,19 @@ minimumReleaseAgeExclude:
   - '@aws-sdk/token-providers@3.1108.0'
   - '@aws-sdk/types@3.974.3'
   - '@aws-sdk/xml-builder@3.972.38'
+
+overrides:
+  busboy: ^1.6.0
+  serialize-javascript: ^7.0.5
+  diff: ^8.0.3
+
+# fast-xml-parser advisories not fixable without breaking s3rver:
+# GHSA-x3cc-x39p-42qx (prototype pollution) is patched only in >=4.1.2, and
+# GHSA-gh4j-gqv2-49f6 (XMLBuilder comment/CDATA injection) only in >=5.7.0,
+# but s3rver@3.7.1 needs the v3 top-level parse/validate/j2xParser API that
+# was removed in v4. Both are dev-only (local S3 mock) and the XMLBuilder
+# path is not exercised by s3rver.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-x3cc-x39p-42qx
+    - GHSA-gh4j-gqv2-49f6
