@@ -2,13 +2,13 @@
 
 ## Project overview
 
-Single-file Node.js ES module (`index.js`) that uploads local files to AWS S3. No build step — ships raw `.js`. Published to GitHub Packages under `@uazgraduatecollege`.
+Single-file Node.js ES module (`index.js`) that uploads local files to AWS S3. No build step — ships raw `.js`. Published to GitHub Packages under `@uazgraduatecollege`. Uses [pnpm](https://pnpm.io) as the package manager (pinned via `packageManager` in package.json).
 
 ## Commands
 
 - **Lint:** `npx eslint .` (or runs automatically as `pretest` before tests)
-- **Test:** `npm test` — runs `eslint .` then `mocha --reporter spec`
-- In CI/CD, use `npm ci` instead of `npm install` for deterministic builds from the lock file.
+- **Test:** `pnpm test` — runs `eslint .` then `mocha --reporter spec`
+- In CI/CD, use `pnpm install --frozen-lockfile` instead of `pnpm install` for deterministic builds from the lock file.
 
 Tests run against a local [s3rver](https://www.npmjs.com/package/s3rver) mock by default. To test against a real S3 bucket, set `AWS_S3_BUCKET` (plus standard AWS credential env vars) before running.
 
