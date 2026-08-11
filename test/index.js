@@ -91,6 +91,7 @@ describe('S3Publisher', () => {
         s3 = new S3({
           endpoint: 'http://localhost:4568',
           forcePathStyle: true,
+          region: 'us-east-1',
           credentials: {
             accessKeyId: 'S3RVER',
             secretAccessKey: 'S3RVER'
