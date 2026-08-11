@@ -1,7 +1,7 @@
-/* eslint-env mocha */
 'use strict'
 
-import 'dotenv/config'
+import dotenv from 'dotenv'
+dotenv.config({ quiet: true })
 
 import { S3 } from '@aws-sdk/client-s3'
 import S3Publisher from '../index.js'
@@ -91,6 +91,7 @@ describe('S3Publisher', () => {
         s3 = new S3({
           endpoint: 'http://localhost:4568',
           forcePathStyle: true,
+          region: 'us-east-1',
           credentials: {
             accessKeyId: 'S3RVER',
             secretAccessKey: 'S3RVER'
