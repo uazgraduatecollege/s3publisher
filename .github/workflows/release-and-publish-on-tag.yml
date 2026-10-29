@@ -58,7 +58,7 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Publish to Github Packages
+      - name: Publish to GitHub Packages
         env:
           RELEASE_VERSION: ${{ github.ref_name }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
