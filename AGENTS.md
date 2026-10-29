@@ -17,12 +17,22 @@ Tests run against a local [s3rver](https://www.npmjs.com/package/s3rver) mock by
 - `index.js` — sole source file, exports `S3Publisher` class
 - `test/index.js` — Mocha + Chai tests using s3rver (local S3 mock)
 - `example.js` — runnable example, demonstrates S3Publisher usage with s3rver mock or live AWS
+- `.github/workflows/test.yml` — runs `pnpm test` on pull requests to `main`
+- `.github/workflows/release-and-publish-on-tag.yml` — publishes and releases on tag push (see Releases)
 - No TypeScript, no build, no codegen, no transpilation
+
+## Releases
+
+- Releases are created by pushing a tag. The workflow publishes first, then creates the GitHub Release only if publishing succeeds.
+- Tags must be bare semver with no `v` prefix, e.g. `1.0.4`, `1.0.4-alpha1`, `1.0.4-beta.2`, `1.0.4-rc1`. Tag filters are globs, so they approximate semver rather than matching it exactly.
+- The workflow sets `package.json` `version` from the tag at publish time. The version change is not committed back to the repo, so `package.json` on `main` may lag the latest published version.
+- Prerelease tags publish under their own dist-tag (`alpha`, `beta`, `rc`) and are marked as prereleases on GitHub. Only stable tags publish as `latest`.
+- A failed publish leaves no GitHub Release. If publishing succeeds but the release step fails, the version is already on GitHub Packages and a re-run will fail at publish. Delete that version in GitHub Packages before retrying.
 
 ## Conventions
 
 - `"type": "module"` in package.json — all `.js` files are ES modules
-- Linting via [neostandard](https://github.com/neostandard/neostandard) with ESLint 9 flat config (`eslint.config.js`). Run `npx eslint .` to lint
+- Linting via [neostandard](https://github.com/neostandard/neostandard) with ESLint 10 flat config (`eslint.config.js`). Run `npx eslint .` to lint
 - 2-space indent, LF line endings
 - `test/` directory is linted along with source files
 - When committing with issue references (e.g. "references #43", "closes #43"), use the exact keyword the user provides

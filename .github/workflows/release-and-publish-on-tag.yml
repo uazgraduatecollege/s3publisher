@@ -1,0 +1,88 @@
+name: Create Release and Publish on Tag
+
+on:
+  push:
+    # Trigger only on semver tags like 1.2.3 (allow prerelease suffixes)
+    # Tag filters are globs, not regex, so this approximates semver rather than matching it exactly
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-alpha*'
+      - '[0-9]+.[0-9]+.[0-9]+-beta*'
+      - '[0-9]+.[0-9]+.[0-9]+-rc*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+          registry-url: https://npm.pkg.github.com/
+          scope: '@uazgraduatecollege'
+
+      - name: Set package version from tag
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: node -e "const fs=require('fs'); const p='package.json'; const pkg=JSON.parse(fs.readFileSync(p, 'utf8')); pkg.version=process.env.RELEASE_VERSION; fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n')"
+
+      - name: Verify package version
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          ACTUAL_VERSION="$(node -p "require('./package.json').version")"
+          test "$ACTUAL_VERSION" = "$RELEASE_VERSION"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify package contents
+        run: pnpm pack --dry-run
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Publish to GitHub Packages
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Prereleases get their own dist-tag so they don't become the default install
+          case "$RELEASE_VERSION" in
+            *-alpha*) DIST_TAG=alpha ;;
+            *-beta*) DIST_TAG=beta ;;
+            *-rc*) DIST_TAG=rc ;;
+            *) DIST_TAG=latest ;;
+          esac
+          pnpm publish --access restricted --no-git-checks --tag "$DIST_TAG"
+
+  release:
+    name: Create GitHub Release
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
