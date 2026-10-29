@@ -1,6 +1,6 @@
 {
   "name": "@uazgraduatecollege/s3publisher",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A utility for deploying static files to AWS S3. Intended primarily for use in CI/CD tasks, eg. publishing a tagged release using gulp.",
   "main": "index.js",
   "type": "module",
@@ -38,15 +38,15 @@
     "node": ">= 22"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1108.0",
-    "file-type": "^22.0.1"
+    "@aws-sdk/client-s3": "^3.1158.0",
+    "file-type": "^22.2.0"
   },
   "devDependencies": {
-    "chai": "^6.2.2",
-    "dotenv": "^17.4.2",
-    "eslint": "^9.39.5",
-    "mocha": "^11.7.6",
-    "neostandard": "^0.13.0",
+    "chai": "^6.3.0",
+    "dotenv": "^18.0.9",
+    "eslint": "^10.13.0",
+    "mocha": "^12.0.3",
+    "neostandard": "^0.14.1",
     "s3rver": "^3.7.1"
   }
 }
