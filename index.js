@@ -15,7 +15,7 @@ class S3Publisher {
    * @params.bucket string The name of the S3 bucket where files will be synced
    * @params.exclusions array A list of file extensions to be excluded when uploading
    * @params.keyPrefix string A directory path to be created in the remote bucket
-   * @params.preserveSourceTree boolean Whether
+   * @params.preserveSourceDir boolean Whether
    * @params.s3Client object Optional custom S3 client instance
    * @params.acl string Optional S3 ACL value (e.g. 'public-read'). Omitted by default.
    */
