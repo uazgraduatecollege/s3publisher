@@ -3,11 +3,12 @@ name: Create Release and Publish on Tag
 on:
   push:
     # Trigger only on semver tags like 1.2.3 (allow prerelease suffixes)
+    # Tag filters are globs, not regex, so this approximates semver rather than matching it exactly
     tags:
-      - '*.*.*'
-      - '*.*.*-alpha*'
-      - '*.*.*-beta*'
-      - '*.*.*-rc*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-alpha*'
+      - '[0-9]+.[0-9]+.[0-9]+-beta*'
+      - '[0-9]+.[0-9]+.[0-9]+-rc*'
 
 permissions:
   contents: write
